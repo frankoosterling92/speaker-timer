@@ -1,28 +1,41 @@
-<!-- 5-minute speaker timer. Works as a standalone page and pasted into a Confluence HTML macro. -->
+<!doctype html>
+<!-- 5-minute speaker timer. Scales to fill whatever window or iframe it sits in. -->
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speaker timer</title>
 <style>
-  .p1t { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 320px; margin: 16px auto;
-         padding: 20px; border-radius: 12px; background: #f4f5f7; text-align: center; transition: background .3s; }
-  .p1t-time { font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; color: #172b4d; margin: 4px 0 12px; }
-  .p1t-label { font-size: 14px; color: #5e6c84; }
-  .p1t button { font-size: 15px; padding: 8px 14px; margin: 0 4px; border: 0; border-radius: 6px; cursor: pointer;
-                background: #0052cc; color: #fff; }
+  html, body { margin: 0; height: 100%; }
+  .p1t { box-sizing: border-box; height: 100vh; width: 100vw; padding: 3vmin;
+         display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin;
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f5f7;
+         text-align: center; transition: background .3s; overflow: hidden; }
+  .p1t-label { font-size: clamp(11px, 5vmin, 32px); color: #5e6c84; }
+  .p1t-time { font-size: min(30vw, 48vh); line-height: 1; font-weight: 700;
+              font-variant-numeric: tabular-nums; color: #172b4d; }
+  .p1t-btns { display: flex; gap: 2vmin; }
+  .p1t button { font-size: clamp(12px, 5vmin, 30px); padding: .45em .9em; border: 0; border-radius: .35em;
+                cursor: pointer; background: #0052cc; color: #fff; }
   .p1t button.p1t-sec { background: #dfe1e6; color: #172b4d; }
   .p1t.p1t-warn { background: #fff4d6; }
+  .p1t.p1t-flash { background: #ffebe6; }
+  .p1t.p1t-flash .p1t-time { color: #de350b; animation: p1t-blink 1s steps(1, end) infinite; }
   .p1t.p1t-done { background: #ffd5d2; }
   .p1t.p1t-done .p1t-time { color: #bf2600; }
+  @keyframes p1t-blink { 50% { opacity: .15; } }
 </style>
 
 <div class="p1t" id="p1t">
   <div class="p1t-label">Speaking time</div>
   <div class="p1t-time" id="p1t-time">5:00</div>
-  <button id="p1t-start">Start</button>
-  <button id="p1t-reset" class="p1t-sec">Next speaker</button>
+  <div class="p1t-btns">
+    <button id="p1t-start">Start</button>
+    <button id="p1t-reset" class="p1t-sec">Next speaker</button>
+  </div>
 </div>
 
 <script>
 (function () {
-  var TOTAL = 5 * 60, WARN = 60;               // seconds; change TOTAL for a different length
+  var TOTAL = 5 * 60, WARN = 60, FLASH = 30;   // seconds; change TOTAL for a different length
   var box = document.getElementById('p1t'),
       out = document.getElementById('p1t-time'),
       startBtn = document.getElementById('p1t-start'),
@@ -32,7 +45,8 @@
   function render() {
     var s = Math.max(0, Math.ceil(left));
     out.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-    box.classList.toggle('p1t-warn', s <= WARN && s > 0);
+    box.classList.toggle('p1t-warn', s <= WARN && s > FLASH);
+    box.classList.toggle('p1t-flash', s <= FLASH && s > 0);
     box.classList.toggle('p1t-done', s === 0);
   }
   function tick() {
