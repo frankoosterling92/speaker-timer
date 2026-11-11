@@ -1,0 +1,61 @@
+<!-- 5-minute speaker timer. Works as a standalone page and pasted into a Confluence HTML macro. -->
+<meta charset="utf-8">
+<style>
+  .p1t { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 320px; margin: 16px auto;
+         padding: 20px; border-radius: 12px; background: #f4f5f7; text-align: center; transition: background .3s; }
+  .p1t-time { font-size: 64px; font-weight: 700; font-variant-numeric: tabular-nums; color: #172b4d; margin: 4px 0 12px; }
+  .p1t-label { font-size: 14px; color: #5e6c84; }
+  .p1t button { font-size: 15px; padding: 8px 14px; margin: 0 4px; border: 0; border-radius: 6px; cursor: pointer;
+                background: #0052cc; color: #fff; }
+  .p1t button.p1t-sec { background: #dfe1e6; color: #172b4d; }
+  .p1t.p1t-warn { background: #fff4d6; }
+  .p1t.p1t-done { background: #ffd5d2; }
+  .p1t.p1t-done .p1t-time { color: #bf2600; }
+</style>
+
+<div class="p1t" id="p1t">
+  <div class="p1t-label">Speaking time</div>
+  <div class="p1t-time" id="p1t-time">5:00</div>
+  <button id="p1t-start">Start</button>
+  <button id="p1t-reset" class="p1t-sec">Next speaker</button>
+</div>
+
+<script>
+(function () {
+  var TOTAL = 5 * 60, WARN = 60;               // seconds; change TOTAL for a different length
+  var box = document.getElementById('p1t'),
+      out = document.getElementById('p1t-time'),
+      startBtn = document.getElementById('p1t-start'),
+      resetBtn = document.getElementById('p1t-reset');
+  var left = TOTAL, timer = null, endAt = 0;
+
+  function render() {
+    var s = Math.max(0, Math.ceil(left));
+    out.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    box.classList.toggle('p1t-warn', s <= WARN && s > 0);
+    box.classList.toggle('p1t-done', s === 0);
+  }
+  function tick() {
+    left = (endAt - Date.now()) / 1000;
+    if (left <= 0) { left = 0; stop(); beep(); }
+    render();
+  }
+  function stop() { clearInterval(timer); timer = null; startBtn.textContent = left > 0 ? 'Resume' : 'Start'; }
+  function beep() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)(), o = ctx.createOscillator();
+      o.connect(ctx.destination); o.frequency.value = 880; o.start(); o.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  }
+
+  startBtn.onclick = function () {
+    if (timer) { stop(); return; }
+    if (left <= 0) left = TOTAL;
+    endAt = Date.now() + left * 1000;
+    timer = setInterval(tick, 200);
+    startBtn.textContent = 'Pause';
+  };
+  resetBtn.onclick = function () { stop(); left = TOTAL; startBtn.textContent = 'Start'; render(); };
+  render();
+})();
+</script>
